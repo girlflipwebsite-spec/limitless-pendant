@@ -1,0 +1,11 @@
+# Core BLE + protocol
+bleak>=0.22.0
+protobuf>=4.25.0
+click>=8.1.0
+
+# Audio decoding (Opus -> WAV). Requires the libopus system library:
+#   macOS:   brew install opus
+opuslib>=3.0.1
+
+# Local transcription (Phase 4). CPU-only is fine for personal use.
+faster-whisper>=1.0.0

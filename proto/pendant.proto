@@ -1,0 +1,346 @@
+// Limitless Pendant BLE wire protocol.
+//
+// This schema describes the actual over-the-air protobuf format used by the
+// Pendant hardware and the official Limitless Android app (v2.1.6). It is not
+// creative content we authored - it is the fixed wire format the device
+// expects, required for our tool to interoperate with hardware we own.
+//
+// Field numbers/names follow the protocol documentation compiled by the
+// pendant-cli project (https://github.com/sdelcore/pendant-cli), which
+// reverse-engineered it from the Android app. See PROTOCOL.md in this repo
+// for a plain-English description.
+//
+// NOTE: This schema intentionally includes command types (factory reset,
+// clear storage, rekey, firmware update, etc.) that this project's CLI will
+// NEVER send - see CLAUDE.md "Hard Safety Rules". Keeping the schema complete
+// lets us correctly encode/decode every message the device can send or
+// receive; the application layer is what enforces which commands we're
+// allowed to construct.
+
+syntax = "proto3";
+
+package pendant;
+
+// ============================================================================
+// BLE Message Wrapper (handles fragmentation across BLE packets)
+// ============================================================================
+
+message BLEMessageFromNativeToPendant {
+  int32 index = 1;
+  int32 ble_fragment_seq = 2;
+  int32 num_fragments = 3;
+  bytes payload = 4;
+}
+
+message BLEMessageFromPendantToNative {
+  int32 index = 1;
+  int32 ble_fragment_seq = 2;
+  int32 num_fragments = 3;
+  bytes payload = 4;
+}
+
+// ============================================================================
+// Commands (Phone -> Pendant)
+// ============================================================================
+
+message ServerCommandMsg {
+  oneof content {
+    SetManufacturingMode set_manufacturing_mode = 1;
+    SetMacAddress set_mac_address = 2;
+    SetLed set_led = 3;
+    AddWifiCredentials add_wifi_credentials = 4;
+    SetBLEPair set_ble_pair = 5;
+    SetCurrentTime set_current_time = 6;
+    DeleteFlashPage delete_flash_page = 7;
+    DownloadFlashPages download_flash_pages = 8;
+    SetIngestToken set_ingest_token = 9;
+    FactoryResetPendant factory_reset_pendant = 10;
+    ResetDevice reset_device = 11;
+    AuthenticateSuccessAckMessage authenticate_success_ack = 12;
+    SetDeviceName set_device_name = 13;
+    GetDeviceInfo get_device_info = 14;
+    UnpairBluetooth unpair_bluetooth = 15;
+    SetDebugFeatures set_debug_features = 16;
+    StartRecording start_recording = 17;
+    StopRecording stop_recording = 18;
+    ConnectToWifi connect_to_wifi = 19;
+    ConnectToBackend connect_to_backend = 20;
+    GetDeviceStatus get_device_status = 21;
+    SetServerInfo set_server_info = 22;
+    DisconnectWifi disconnect_wifi = 23;
+    SetVADThreshold set_vad_threshold = 24;
+    ClearPendantStorage clear_pendant_storage = 25;
+    SetLEDBrightness set_led_brightness = 26;
+    SetDeviceOnShippingMode set_device_on_shipping_mode = 27;
+    SetServerPublicKey set_audio_encryption_server_public_key = 28;
+    PrepareForFirmwareUpdate prepare_for_firmware_update = 29;
+    SyncFirmwareUpdateState sync_firmware_update_state = 31;
+    PushOpusFrames push_opus_frames = 32;
+    RealTimeAudioAck real_time_audio_ack = 33;
+    RealTimeAudioData real_time_audio_data = 34;
+  }
+  optional RequestData request_data = 30;
+}
+
+message SetManufacturingMode {}
+message SetMacAddress { bytes mac_address = 1; }
+message SetLed { int32 state = 1; }
+message AddWifiCredentials { string ssid = 1; string password = 2; }
+message SetBLEPair { bool enable = 1; }
+message SetCurrentTime { int64 timestamp_ms = 1; }
+message DeleteFlashPage { int32 page_index = 1; }
+message DownloadFlashPages {
+  bool batch_mode_enabled = 1;
+  bool real_time_mode_enabled = 2;
+}
+message SetIngestToken { string token = 1; }
+message FactoryResetPendant {}
+message ResetDevice {}
+message AuthenticateSuccessAckMessage {}
+message SetDeviceName { string name = 1; }
+message GetDeviceInfo {}
+message UnpairBluetooth {}
+message SetDebugFeatures { bool enable = 1; }
+message StartRecording {}
+message StopRecording {}
+message ConnectToWifi { string ssid = 1; }
+message ConnectToBackend {}
+message GetDeviceStatus {}
+message SetServerInfo { string server_url = 1; }
+message DisconnectWifi {}
+message SetVADThreshold { float threshold = 1; }
+message ClearPendantStorage {}
+message SetLEDBrightness { int32 brightness = 1; }
+message SetDeviceOnShippingMode {}
+message SetServerPublicKey { bytes public_key = 1; }
+message PrepareForFirmwareUpdate {}
+message SyncFirmwareUpdateState {}
+message PushOpusFrames { bytes frames = 1; }
+message RealTimeAudioAck { int64 seq = 1; }
+message RealTimeAudioData { bytes data = 1; int64 seq = 2; }
+message RequestData { int32 request_id = 1; }
+
+// ============================================================================
+// Responses (Pendant -> Phone)
+// ============================================================================
+
+message PendantAllMsg {
+  oneof content {
+    DeviceInfoMsg device_info = 1;
+    StorageBufferMsg storage_buffer = 2;
+    SetCurrentTimeResponse set_current_time_response = 3;
+    AuthenticateIngestMessage authenticate_ingest = 4;
+    DeviceStatus device_status = 5;
+    BatteryStatus battery_status = 7;
+    ButtonStatus button_status = 8;
+    RealTimeAudioDataResponse real_time_audio_data = 9;
+    RealTimeAudioAckResponse real_time_audio_ack = 10;
+  }
+  optional ResponseData response_data = 6;
+}
+
+message DeviceInfoMsg {
+  string firmware_version = 1;
+  string hardware_version = 2;
+  string serial_number = 3;
+  bytes mac_address = 4;
+  string device_name = 5;
+}
+
+message StorageBufferMsg {
+  IngestType ingest_type = 1;
+  int32 session = 2;
+  int32 run = 3;
+  int64 seq = 4;
+  int32 index = 5;
+  bytes flash_page = 6; // Contains a serialized FlashPage message
+  FlashPageError flash_page_error = 7;
+}
+
+message SetCurrentTimeResponse { bool success = 1; }
+message AuthenticateIngestMessage { bool authenticated = 1; string challenge = 2; }
+
+enum RecordingState {
+  RECORDING_STATE_NOT_RECORDING = 0;
+  RECORDING_STATE_RECORDING = 1;
+  RECORDING_STATE_LISTENING = 2;
+}
+
+enum SyncMode {
+  SYNC_MODE_UNSPECIFIED = 0;
+  SYNC_MODE_REALTIME = 1;
+  SYNC_MODE_BATCH = 2;
+}
+
+message StorageState {
+  int32 oldest_flash_page = 1;
+  int32 newest_flash_page = 2;
+  int32 current_storage_session = 3;
+  int32 free_capture_pages = 4;
+  int32 total_capture_pages = 5;
+}
+
+message DeviceRecordingStatus {
+  RecordingState recording_state = 1;
+  int32 recording_source = 2;
+  int32 vad_level = 3;
+}
+
+message DeviceStatus {
+  WifiStatus wifi_status = 1;
+  SetServerInfo server_info = 2;
+  SetVADThreshold vad_threshold = 3;
+  int32 led_brightness = 4;
+  StorageState storage_state = 5;
+  SyncMode sync_mode = 6;
+  DeviceRecordingStatus recording_status = 7;
+  bool has_all_fields = 8;
+  BatteryStatus battery_status = 9;
+}
+
+enum BatteryState {
+  BATTERY_STATE_UNKNOWN = 0;
+  BATTERY_STATE_CHARGING = 1;
+  BATTERY_STATE_DISCHARGING = 2;
+  BATTERY_STATE_NOT_CHARGING = 3;
+  BATTERY_STATE_FULL = 4;
+}
+
+enum UsbState {
+  USB_STATE_UNKNOWN = 0;
+  USB_STATE_DISCONNECTED = 1;
+  USB_STATE_CONNECTED = 2;
+}
+
+message BatteryStatus {
+  BatteryState state = 1;
+  int32 voltage = 2;
+  int32 current = 3;
+  int32 temperature = 4;
+  int32 soc = 5; // State of charge, 0-100
+  int32 capacity = 6;
+  bool over_operating_temperature = 7;
+  bool under_operating_temperature = 8;
+  UsbState usb_state = 9;
+}
+
+message ButtonStatus { bool pressed = 1; }
+message RealTimeAudioDataResponse { bytes data = 1; int64 seq = 2; }
+message RealTimeAudioAckResponse { int64 seq = 1; }
+message ResponseData { int32 request_id = 1; bool success = 2; }
+
+enum IngestType {
+  INGEST_TYPE_UNSPECIFIED = 0;
+  INGEST_TYPE_AUDIO = 1;
+  INGEST_TYPE_LOG = 2;
+  INGEST_TYPE_IMU = 3;
+}
+
+enum FlashPageError {
+  FLASH_PAGE_ERROR_NONE = 0;
+  FLASH_PAGE_ERROR_READ_FAILED = 1;
+  FLASH_PAGE_ERROR_CORRUPT = 2;
+}
+
+// ============================================================================
+// Flash Page / Audio Data
+// ============================================================================
+
+message FlashPage {
+  int64 absolute_timestamp_ms = 1;
+  int64 boot_uptime_ms = 2;
+  repeated Chunk chunks = 3;
+}
+
+// Chunk is NOT a oneof - all fields are independent and can coexist.
+message Chunk {
+  int32 time_offset_ms = 1;
+  PendantAudioData audio_data = 2;
+  ButtonStatus button_status = 3;
+  WifiStatus wifi_status = 4;
+  BleStatus ble_status = 5;
+  BatteryStatus battery_status = 6;
+  UsbStatus usb_status = 7;
+  ImuData imu_data = 8;
+  RecordingStatus recording_status = 9;
+  LogOutput log_output = 10;
+  RuntimeStatus runtime_status = 11;
+  StorageStatus storage_status = 12;
+  CpuStatus cpu_status = 13;
+}
+
+message WifiStatus {
+  bool connected = 1;
+  string ssid = 2;
+  int32 rssi = 3;
+}
+
+message BleStatus {
+  bool connected = 1;
+  int32 mtu = 2;
+}
+
+message UsbStatus { bool connected = 1; }
+message RecordingStatus { bool is_recording = 1; }
+
+message StorageStatus {
+  int32 used_percent = 1;
+  int64 used_bytes = 2;
+  int64 total_bytes = 3;
+}
+
+message CpuStatus {
+  int32 usage_percent = 1;
+  int32 temperature = 2;
+}
+
+message PendantAudioData {
+  bytes pcm_omni_mic_data = 1;
+  bytes pcm_directional_mic_data = 2;
+  bytes pcm_beamforming_data = 3;
+  bytes codec_beamforming_data = 4; // Opus-encoded audio, plaintext (most common)
+  bytes codec_manual_beamforming_data = 5;
+  bytes reserved_1 = 6;
+  bytes pcm_manual_beamforming_data = 7;
+  bool did_start_recording = 8;
+  bool did_stop_recording = 9;
+  CodecType codec_type = 10;
+  int32 num_frames = 11;
+  int32 degree_of_arrival = 12;
+  EncryptedBytes encrypted_codec_beamforming_data = 13; // Present if audio encryption is on
+}
+
+message EncryptedBytes {
+  bytes ciphertext = 1;
+  bytes nonce = 2;
+  bytes tag = 3;
+}
+
+message RuntimeStatus {
+  int32 cpu_usage = 1;
+  int32 memory_usage = 2;
+}
+
+message LogOutput {
+  string message = 1;
+  int32 level = 2;
+}
+
+message ImuData {
+  repeated ImuReading readings = 1;
+}
+
+message ImuReading {
+  float accel_x = 1;
+  float accel_y = 2;
+  float accel_z = 3;
+  float gyro_x = 4;
+  float gyro_y = 5;
+  float gyro_z = 6;
+}
+
+enum CodecType {
+  CODEC_TYPE_UNSPECIFIED = 0;
+  CODEC_TYPE_OPUS = 1;
+  CODEC_TYPE_PCM = 2;
+}

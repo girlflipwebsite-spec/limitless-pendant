@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local recordings/transcripts/logs - personal data, stays on the client's Mac only
+/data/
+
+# Generated protobuf code is committed on purpose (see proto_loader.py) so the
+# client doesn't need protoc installed - do not ignore proto/pendant_pb2.py.
+
+.reference/
