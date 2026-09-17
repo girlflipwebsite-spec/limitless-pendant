@@ -1,22 +1,30 @@
 """BLE client for talking to the Pendant, via bleak (cross-platform, uses
 CoreBluetooth on macOS).
 
-Pairing note: unlike the Linux reference implementation (which drives
-bluetoothctl/BlueZ directly for pairing), bleak's macOS backend does not
-expose an explicit pair/bond call - CoreBluetooth handles bonding
-transparently once you connect to a peripheral that requires it. The expected
-flow on macOS is:
+Pairing note (revised - see CLAUDE.md Section 7.2): the Pendant is a
+BLE-only custom peripheral, not a classic Bluetooth device - it doesn't
+implement the audio/HID profiles that would make it show up as something
+you manually "pair" in System Settings > Bluetooth like a headset. The
+client confirmed via Limitless's own support content that the device only
+has an official flow through the mobile app, and the mobile app itself
+never asks the user to pre-pair it in the phone's OS Bluetooth settings
+either - it just connects over BLE from within the app.
 
-  1. Pair the Pendant once via System Settings > Bluetooth (put it in
-     pairing mode and connect from there). This is what actually creates the
-     bond at the OS level.
-  2. Everything in this file then just scans/connects/reads/writes over GATT;
-     macOS transparently uses the existing bond.
+So the expected flow here mirrors that: don't try to pre-pair via System
+Settings first. Instead:
 
-This is exactly the kind of thing Section 7.2 of the project plan flags as
-needing verification on real hardware - if step 1 alone isn't enough and the
-device refuses commands, that's a Phase 1 finding to report back, not
-something to work around by touching pairing internals.
+  1. `scan()` finds the device by BLE advertisement alone, no pairing needed
+     for that.
+  2. `connect()` opens a GATT connection. If the device requests encryption/
+     bonding at that point (matching the Android app's `createBond()` call
+     noted in PROTOCOL.md), CoreBluetooth should negotiate it transparently,
+     possibly surfacing a one-time macOS pairing/passkey confirmation dialog
+     - which the user should accept if it appears.
+
+Whether this actually works end-to-end (and what, if anything, macOS asks
+the user to confirm) is still unverified - that's exactly the Phase 1
+finding to report back, not something to guess further at without real
+hardware.
 
 Everything here is read-only with respect to the device: it only ever sends
 the commands in protocol.ALLOWED_COMMANDS (info/status/clock-sync/download).
@@ -133,8 +141,8 @@ class PendantClient:
         if device is None:
             self._log(
                 "Device not found during scan. Make sure it's powered on, awake (tap it), "
-                "not connected to a phone via the official Limitless app, and already paired "
-                "in System Settings > Bluetooth."
+                "and not connected to a phone via the official Limitless app - only one "
+                "central device can hold its BLE connection at a time."
             )
             return False
 

@@ -100,7 +100,9 @@ Full protocol is documented in that repo's `PROTOCOL.md` (BLE characteristic UUI
 
 ### 7.2 Platform gap
 
-`pendant-cli` targets **Linux** (uses `bluetoothctl`/BlueZ via `dbus-python` and `PyGObject` for pairing). Its BLE library, `bleak`, is cross-platform and does support macOS (via CoreBluetooth). This project uses bleak directly with no Linux-specific dependencies. Pairing/bonding on macOS is expected to happen once via System Settings > Bluetooth before the script connects (see `pendant/ble_client.py` module docstring) - **this needs to be verified on the client's actual Mac**, it's the first open question for Phase 1.
+`pendant-cli` targets **Linux** (uses `bluetoothctl`/BlueZ via `dbus-python` and `PyGObject` for pairing). Its BLE library, `bleak`, is cross-platform and does support macOS (via CoreBluetooth). This project uses bleak directly with no Linux-specific dependencies.
+
+**Update:** the client checked with Limitless's own support content and confirmed the Pendant cannot be manually paired via System Settings > Bluetooth like a normal Bluetooth device - it's a BLE-only custom peripheral, not a classic audio/HID device, so it likely won't even appear there. The official mobile app doesn't pre-pair it via the phone's OS Bluetooth settings either, it just connects directly over BLE. This replaces the earlier assumption in this section. The corrected expectation (see `pendant/ble_client.py` module docstring): `scan` finds it by BLE advertisement alone, and any bonding/encryption negotiation the device requires should happen automatically during `connect()`, possibly surfacing a one-time macOS pairing/passkey popup. **This still needs to be verified on the client's actual Mac** - it's the first open question for Phase 1, just with a corrected hypothesis for how it's expected to work.
 
 ### 7.3 Excluded alternative: firmware-based approach
 
@@ -204,6 +206,8 @@ Do not resolve these unilaterally in code, surface them and wait for an answer:
 - `Sync Pendant.command` - Phase 5 one-button launcher
 - `tests/` - protocol, sync-state, and audio-store unit tests all pass on Windows with no hardware; an Opus round-trip test is included but skips unless real libopus is installed (it will run on the client's Mac)
 
-**Not yet known:** whether macOS bonding via System Settings is sufficient for the device to respond to commands (Section 7.2), and whether this Pendant's recordings are encrypted (Section 7.4). Both require the client's Mac - see README.md "First run on your Mac" for the exact steps and what to send back.
+**Not yet known:** whether a direct BLE connection from a Mac (scan + connect, no manual System Settings pairing - see the corrected Section 7.2) is sufficient for the device to respond to commands, and whether this Pendant's recordings are encrypted (Section 7.4). Both require the client's Mac - see README.md Section 3 "First run: connecting to the Pendant" for the exact steps and what to send back.
+
+**2026-09-18 update:** client relayed Limitless's own support content confirming the Pendant is BLE-only and isn't manually paired via System Settings like a normal Bluetooth device (see Section 7.2). Removed the incorrect "pair via System Settings first" instruction from README.md and the corresponding assumption from `pendant/ble_client.py`'s docstring - the tool now relies on `scan` + `connect` alone, with any bonding expected to happen automatically (possibly via a one-time macOS pairing popup). Still unverified on real hardware.
 
 **Hours so far:** ~1 session of initial build-out (proto/protocol/BLE client/audio pipeline/tests/docs). Nowhere near the 30-hour cap yet; the hour-16 checkpoint has not been reached because no hardware test has happened yet.

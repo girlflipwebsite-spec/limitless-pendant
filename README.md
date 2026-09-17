@@ -89,18 +89,20 @@ new Terminal window** before running any `python3 -m pendant.cli ...`
 command below. You'll know it worked because your prompt line gets a
 `(.venv)` prefix.
 
-### 2.5 Pair the Pendant with your Mac
+### 2.5 About pairing - there's nothing to do here
 
-This is a **one-time** step, done the normal macOS way, not through this
-tool:
+You do **not** need to manually pair the Pendant in System Settings first,
+and it likely won't even show up there as something to "Connect" to (it's
+not a headset-style Bluetooth device - it only speaks a custom protocol).
+This matches how the official Limitless mobile app works too: you never
+pre-pair it in your phone's Bluetooth settings either, the app just connects
+to it directly.
 
-1. Open **System Settings > Bluetooth**
-2. Put the Pendant into pairing mode (check its manual or LED behavior for how)
-3. When it shows up in the device list, click **Connect**
-
-Do this even though the Pendant won't "stay connected" in that list
-afterward - what matters is that macOS now has a Bluetooth bond with it,
-which is what lets this tool talk to it later.
+So there's no separate pairing step - `scan` and `status` in Section 3
+handle discovery and connection themselves. If macOS ever pops up a
+one-time Bluetooth pairing/passkey confirmation while `status` or `info` is
+running, accept it - that's expected and is macOS bonding with the device
+automatically in the background.
 
 Setup is done. Move to Section 3.
 
@@ -184,8 +186,8 @@ report back with:**
   saves its own log there automatically, so you don't need to copy-paste
   from Terminal - just find those files in Finder and send them)
 
-This tells us whether pairing via System Settings alone is enough for the
-Pendant to respond to commands - the first thing this project needs to
+This tells us whether the Pendant responds to commands over a direct BLE
+connection from a Mac at all - the first thing this project needs to
 confirm.
 
 ---
@@ -322,8 +324,8 @@ never gets uploaded to the code repository.
   at a time.
 - **`status`/`info` hang after `scan` succeeds:** this is exactly the kind
   of thing to report back (see [3.4](#34-what-to-send-back)) - it likely
-  means pairing via System Settings needs an extra step we haven't
-  accounted for yet.
+  means the device needs a bonding step we haven't accounted for yet, or a
+  macOS pairing popup appeared somewhere that needs a response.
 - **Everything logs to `data/logs/`:** if anything goes wrong, the easiest
   way to report it is to attach the newest file(s) from that folder rather
   than copy-pasting Terminal output.
