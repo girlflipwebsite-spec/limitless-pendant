@@ -85,8 +85,6 @@ async def _best_effort_sync_time(client: PendantClient, log) -> None:
 def _no_response_help(log) -> None:
     log.echo("")
     log.echo("No response from the device within the timeout. This usually means one of:")
-    log.echo("  - it isn't bonded with this Mac yet - try pairing it once via System")
-    log.echo("    Settings > Bluetooth, then re-run this command")
     log.echo("  - it went back to sleep - tap it to wake it, then re-run")
     log.echo("  - it's currently connected to your phone via the official Limitless app")
     log.echo("    (only one device can hold its BLE connection at a time)")

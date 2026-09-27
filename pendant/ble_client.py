@@ -1,30 +1,12 @@
 """BLE client for talking to the Pendant, via bleak (cross-platform, uses
 CoreBluetooth on macOS).
 
-Pairing note (revised - see CLAUDE.md Section 7.2): the Pendant is a
-BLE-only custom peripheral, not a classic Bluetooth device - it doesn't
-implement the audio/HID profiles that would make it show up as something
-you manually "pair" in System Settings > Bluetooth like a headset. The
-client confirmed via Limitless's own support content that the device only
-has an official flow through the mobile app, and the mobile app itself
-never asks the user to pre-pair it in the phone's OS Bluetooth settings
-either - it just connects over BLE from within the app.
-
-So the expected flow here mirrors that: don't try to pre-pair via System
-Settings first. Instead:
-
-  1. `scan()` finds the device by BLE advertisement alone, no pairing needed
-     for that.
-  2. `connect()` opens a GATT connection. If the device requests encryption/
-     bonding at that point (matching the Android app's `createBond()` call
-     noted in PROTOCOL.md), CoreBluetooth should negotiate it transparently,
-     possibly surfacing a one-time macOS pairing/passkey confirmation dialog
-     - which the user should accept if it appears.
-
-Whether this actually works end-to-end (and what, if anything, macOS asks
-the user to confirm) is still unverified - that's exactly the Phase 1
-finding to report back, not something to guess further at without real
-hardware.
+Pairing note (resolved - see CLAUDE.md Section 7.2): the Pendant is a
+BLE-only custom peripheral, not a classic Bluetooth device, and it does not
+show up in System Settings > Bluetooth to manually pair. Confirmed on real
+hardware that no pairing/bonding step is needed at all: `scan()` +
+`connect()` alone are sufficient. The actual blocker turned out to be
+unrelated to pairing entirely - see the note on `_send()` below.
 
 Everything here is read-only with respect to the device: it only ever sends
 the commands in protocol.ALLOWED_COMMANDS (info/status/clock-sync/download).
@@ -107,6 +89,11 @@ class PendantClient:
 
         rtype = response.get("type")
         self._log(f"  [debug] received response type={rtype!r} ({len(payload)} bytes)")
+        if rtype not in ("storage_buffer",):
+            # Raw hex for anything except bulk audio pages (flash_page data
+            # can be large) - lets us hand-verify field parsing against the
+            # real device's actual bytes when a parsed value looks wrong.
+            self._log(f"    [debug] raw payload: {payload.hex()}")
 
         if rtype == "battery_status":
             self._battery_level = response
@@ -210,13 +197,11 @@ class PendantClient:
     async def _send(self, cmd_type: str, **kwargs) -> None:
         cmd = self.protocol.create_command(cmd_type, **kwargs)
         self._log(f"  [debug] sending command {cmd_type!r} ({len(cmd)} bytes, write-with-response)")
-        # Diagnostic change: explore confirmed the Control characteristic
-        # supports both "write" and "write-without-response". Using a real
-        # Write Request (response=True) gets a GATT-level acknowledgement
-        # that the peripheral's application actually received the bytes,
-        # which write-without-response never confirms. If this succeeds but
-        # we still get no notification back, that further isolates the
-        # problem to command *processing*, not delivery.
+        # Confirmed on real hardware: write-without-response silently never
+        # reached the device's application layer (no GATT error, but also
+        # no notification ever came back, for any command). Switching to a
+        # real Write Request (response=True), which the Control
+        # characteristic also advertises support for, fixed it completely.
         await self._client.write_gatt_char(CONTROL_CHAR_UUID, cmd, response=True)
 
     async def _request(self, cmd_type: str, awaited_response_type: str, **kwargs) -> dict:

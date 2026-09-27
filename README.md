@@ -323,14 +323,12 @@ never gets uploaded to the code repository.
   awake (tap it), and isn't currently connected to your phone via the
   official Limitless app - only one device can hold the Bluetooth connection
   at a time.
-- **`status`/`info` connects fine but then times out with no response:**
-  we've seen this happen on real hardware, and confirmed the Pendant
-  doesn't appear in System Settings > Bluetooth to pair manually either
-  (it's BLE-only, not a classic Bluetooth device - see Section 2.5). Run
-  `python3 -m pendant.cli explore` instead - it's fully read-only, sends no
-  commands, and just lists everything the device exposes. Send back its log
-  either way; that's the next piece of information needed to figure out how
-  to unblock this.
+- **`status`/`info` connects fine but times out with no response:** this
+  showed up during testing and turned out to be unrelated to pairing - it
+  was fixed by sending commands with GATT write acknowledgement enabled
+  (already the default now). If it comes back, run
+  `python3 -m pendant.cli explore` (fully read-only, sends no commands,
+  just lists everything the device exposes) and send its log back.
 - **Everything logs to `data/logs/`:** if anything goes wrong, the easiest
   way to report it is to attach the newest file(s) from that folder rather
   than copy-pasting Terminal output.
