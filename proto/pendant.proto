@@ -139,12 +139,18 @@ message PendantAllMsg {
   optional ResponseData response_data = 6;
 }
 
+// Field layout corrected 2026-09-27 against a real device response (firmware
+// 1.1.20) - it does NOT match the field numbers pendant-cli's PROTOCOL.md
+// documents for this message (that schema was reverse-engineered from a
+// different Android app version and doesn't line up with this hardware's
+// actual firmware). Field 3 is confirmed correct (decoded and matched a
+// human-readable version string). Field 9 is a reasonable guess (right
+// length for a MAC address). Everything else in the real response is
+// unconfirmed and intentionally left undeclared here - undeclared fields are
+// simply ignored during parsing, which is safer than guessing wrong types.
 message DeviceInfoMsg {
-  string firmware_version = 1;
-  string hardware_version = 2;
-  string serial_number = 3;
-  bytes mac_address = 4;
-  string device_name = 5;
+  string firmware_version = 3;  // confirmed: e.g. "1.1.20 b312ca1efaaa" (version + build hash)
+  bytes mac_address = 9;        // best guess: 6 raw bytes, MAC-address length
 }
 
 message StorageBufferMsg {

@@ -121,7 +121,12 @@ def status():
 
 @cli.command()
 def info():
-    """Read device info: firmware, hardware, serial number."""
+    """Read device info: firmware version and MAC address.
+
+    Only these two fields are currently decoded - this response message's
+    full layout on real hardware doesn't match pendant-cli's documented
+    schema, see proto/pendant.proto's DeviceInfoMsg comment. Run `explore`
+    if you need more than this."""
     with SessionLog("info") as log:
         async def run():
             client = await _connected_client(log)
@@ -134,10 +139,8 @@ def info():
                     _no_response_help(log)
                     raise click.ClickException("Device did not respond to an info request.")
                 log.echo("")
-                log.echo(f"Device name: {info.get('device_name')}")
                 log.echo(f"Firmware: {info.get('firmware_version')}")
-                log.echo(f"Hardware: {info.get('hardware_version')}")
-                log.echo(f"Serial: {info.get('serial_number')}")
+                log.echo(f"MAC address: {info.get('mac_address')}")
             finally:
                 await client.disconnect()
 

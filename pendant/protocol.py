@@ -114,12 +114,13 @@ class PendantProtocol:
         result: dict = {"type": content_type}
 
         if content_type == "device_info":
+            # See proto/pendant.proto's DeviceInfoMsg comment - only these
+            # two fields are confirmed/guessed against a real device; the
+            # rest of this message's real layout is still unknown.
             info = msg.device_info
             result.update(
                 firmware_version=info.firmware_version,
-                hardware_version=info.hardware_version,
-                serial_number=info.serial_number,
-                device_name=info.device_name,
+                mac_address=info.mac_address.hex() if info.mac_address else None,
             )
 
         elif content_type == "device_status":
