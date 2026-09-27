@@ -134,3 +134,127 @@ def export_daily_transcript(
     out_path = transcripts_dir / f"{date_str}{_EXTENSIONS[output_format]}"
     out_path.write_text(content, encoding="utf-8")
     return out_path
+
+
+def _iter_dates(start_date: str, end_date: str):
+    start = datetime.strptime(start_date, "%Y-%m-%d")
+    end = datetime.strptime(end_date, "%Y-%m-%d")
+    if end < start:
+        raise ValueError(f"End date {end_date} is before start date {start_date}")
+    current = start
+    while current <= end:
+        yield current.strftime("%Y-%m-%d")
+        current += timedelta(days=1)
+
+
+def transcribe_range(
+    start_date: str,
+    end_date: str,
+    recordings_dir: Path = RECORDINGS_DIR,
+    model_size: str = DEFAULT_MODEL_SIZE,
+) -> dict[str, list[RecordingTranscript]]:
+    """Decode + transcribe every recording across a date range (inclusive).
+    Days with no recordings folder at all are skipped rather than erroring -
+    a week/month export shouldn't fail just because one day is empty."""
+    days: dict[str, list[RecordingTranscript]] = {}
+    for date_str in _iter_dates(start_date, end_date):
+        try:
+            days[date_str] = transcribe_day(date_str, recordings_dir=recordings_dir, model_size=model_size)
+        except FileNotFoundError:
+            continue
+    return days
+
+
+def _format_markdown_range(days: dict[str, list[RecordingTranscript]]) -> str:
+    dates = sorted(days)
+    lines = [f"# Transcript for {dates[0]} to {dates[-1]}", ""]
+    for date_str in dates:
+        recordings = days[date_str]
+        if not recordings:
+            continue
+        lines.append(f"## {date_str}")
+        lines.append("")
+        for rec in recordings:
+            lines.append(f"### {rec.recording_start.strftime('%H:%M:%S')}")
+            lines.append("")
+            for seg in rec.segments:
+                ts = (rec.recording_start + timedelta(seconds=seg.start_sec)).strftime("%H:%M:%S")
+                lines.append(f"**[{ts}]** {seg.text}")
+            lines.append("")
+    return "\n".join(lines)
+
+
+def _format_txt_range(days: dict[str, list[RecordingTranscript]]) -> str:
+    lines = []
+    for date_str in sorted(days):
+        recordings = days[date_str]
+        if not recordings:
+            continue
+        lines.append(f"=== {date_str} ===")
+        for rec in recordings:
+            for seg in rec.segments:
+                ts = (rec.recording_start + timedelta(seconds=seg.start_sec)).strftime("%H:%M:%S")
+                lines.append(f"[{ts}] {seg.text}")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def _format_json_range(days: dict[str, list[RecordingTranscript]]) -> str:
+    payload = {
+        "start_date": min(days) if days else None,
+        "end_date": max(days) if days else None,
+        "days": [
+            {
+                "date": date_str,
+                "recordings": [
+                    {
+                        "start_iso": rec.recording_start.isoformat(),
+                        "source_opus": str(rec.source_opus),
+                        "segments": [
+                            {
+                                "timestamp_iso": (
+                                    rec.recording_start + timedelta(seconds=seg.start_sec)
+                                ).isoformat(),
+                                "start_sec": seg.start_sec,
+                                "end_sec": seg.end_sec,
+                                "text": seg.text,
+                            }
+                            for seg in rec.segments
+                        ],
+                    }
+                    for rec in recordings
+                ],
+            }
+            for date_str, recordings in sorted(days.items())
+            if recordings
+        ],
+    }
+    return json.dumps(payload, indent=2)
+
+
+_RANGE_FORMATTERS = {"md": _format_markdown_range, "txt": _format_txt_range, "json": _format_json_range}
+
+
+def export_transcript_range(
+    start_date: str,
+    end_date: str,
+    recordings_dir: Path = RECORDINGS_DIR,
+    transcripts_dir: Path = TRANSCRIPTS_DIR,
+    model_size: str = DEFAULT_MODEL_SIZE,
+    output_format: str = "md",
+) -> Path:
+    """Transcribe a date range (inclusive) - e.g. a week or a month - and
+    write one combined export file. Returns its path."""
+    if output_format not in _RANGE_FORMATTERS:
+        raise ValueError(f"Unknown output_format {output_format!r}, expected one of {list(_RANGE_FORMATTERS)}")
+
+    days = transcribe_range(start_date, end_date, recordings_dir=recordings_dir, model_size=model_size)
+    if not any(days.values()):
+        raise FileNotFoundError(f"No recordings found between {start_date} and {end_date}")
+
+    content = _RANGE_FORMATTERS[output_format](days)
+
+    transcripts_dir.mkdir(parents=True, exist_ok=True)
+    out_path = transcripts_dir / f"{start_date}_to_{end_date}{_EXTENSIONS[output_format]}"
+    out_path.write_text(content, encoding="utf-8")
+    return out_path

@@ -227,13 +227,25 @@ def decode(input_file, output_file):
 @cli.command()
 @click.argument("date", metavar="YYYY-MM-DD")
 @click.option(
+    "--to", "end_date", metavar="YYYY-MM-DD", default=None,
+    help="End date (inclusive) for a range - combines every day from DATE to --to "
+    "into one transcript, e.g. a full week or month."
+)
+@click.option(
     "--format", "output_format", type=click.Choice(["md", "txt", "json"]), default="md"
 )
-def transcribe(date, output_format):
-    """Transcribe a day's recordings into one clean transcript file."""
-    from .transcript_export import export_daily_transcript
+def transcribe(date, end_date, output_format):
+    """Transcribe recordings into one clean transcript file.
 
-    out_path = export_daily_transcript(date, output_format=output_format)
+    Give just a date for a single day, or add --to for a date range."""
+    if end_date:
+        from .transcript_export import export_transcript_range
+
+        out_path = export_transcript_range(date, end_date, output_format=output_format)
+    else:
+        from .transcript_export import export_daily_transcript
+
+        out_path = export_daily_transcript(date, output_format=output_format)
     click.echo(f"Wrote {out_path}")
 
 

@@ -261,6 +261,16 @@ This writes one clean transcript file to `data/transcripts/2026-09-12.md`,
 combining every recording from that day in order, with timestamps - ready to
 paste or upload into ChatGPT.
 
+**For a whole week, month, or any date range**, add `--to`:
+
+```bash
+python3 -m pendant.cli transcribe 2026-09-01 --to 2026-09-30
+```
+
+This combines every day in that range into one file,
+`data/transcripts/2026-09-01_to_2026-09-30.md`, with a heading per day. Days
+with no recordings in that range are just skipped, not an error.
+
 ---
 
 ## 6. Everyday use (the one-button way)
@@ -291,7 +301,7 @@ environment active (`source .venv/bin/activate`) and `PENDANT_ADDRESS` set
 | `explore` | Lists every service/characteristic on the device (diagnostic) | Read-only |
 | `sync` | Downloads new recordings, saves to `data/recordings/` | Read-only download |
 | `decode <file.opus>` | Converts one recording to a playable `.wav` | No (local file only) |
-| `transcribe <YYYY-MM-DD>` | Builds that day's transcript file | No (local files only) |
+| `transcribe <YYYY-MM-DD> [--to <date>]` | Builds a transcript for one day, or a combined one for a date range | No (local files only) |
 
 None of these commands can delete, reset, or reconfigure the Pendant - that
 capability doesn't exist in this tool at all (see `CLAUDE.md` Section 4).
