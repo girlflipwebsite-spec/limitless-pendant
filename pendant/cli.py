@@ -4,6 +4,7 @@ Usage:
     python -m pendant.cli scan
     python -m pendant.cli status
     python -m pendant.cli info
+    python -m pendant.cli explore
     python -m pendant.cli sync
     python -m pendant.cli decode <opus_file>
     python -m pendant.cli transcribe <YYYY-MM-DD> [--format md|txt|json]
@@ -139,6 +140,22 @@ def info():
                 log.echo(f"Firmware: {info.get('firmware_version')}")
                 log.echo(f"Hardware: {info.get('hardware_version')}")
                 log.echo(f"Serial: {info.get('serial_number')}")
+            finally:
+                await client.disconnect()
+
+        asyncio.run(run())
+
+
+@cli.command()
+def explore():
+    """List every GATT service/characteristic on the device (read-only,
+    diagnostic only - sends no protocol commands)."""
+    with SessionLog("explore") as log:
+        async def run():
+            client = await _connected_client(log)
+            try:
+                log.echo("")
+                await client.explore_services()
             finally:
                 await client.disconnect()
 

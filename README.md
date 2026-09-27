@@ -288,6 +288,7 @@ environment active (`source .venv/bin/activate`) and `PENDANT_ADDRESS` set
 | `scan` | Lists nearby Bluetooth devices, flags the Pendant | No (listen-only) |
 | `status` | Battery %, storage %, recording state | Read-only |
 | `info` | Firmware/hardware/serial number | Read-only |
+| `explore` | Lists every service/characteristic on the device (diagnostic) | Read-only |
 | `sync` | Downloads new recordings, saves to `data/recordings/` | Read-only download |
 | `decode <file.opus>` | Converts one recording to a playable `.wav` | No (local file only) |
 | `transcribe <YYYY-MM-DD>` | Builds that day's transcript file | No (local files only) |
@@ -323,13 +324,13 @@ never gets uploaded to the code repository.
   official Limitless app - only one device can hold the Bluetooth connection
   at a time.
 - **`status`/`info` connects fine but then times out with no response:**
-  we've seen this happen on real hardware. The command will now print a
-  short explanation and some things to try (pair it once via System
-  Settings > Bluetooth as a fallback, tap it to wake it, make sure it's not
-  connected to your phone right now). Try those, then re-run the command.
-  Either way, the log now records every message sent and received, so
-  please send it back (see [3.4](#34-what-to-send-back)) even if retrying
-  doesn't help - that detail is exactly what we need to track this down.
+  we've seen this happen on real hardware, and confirmed the Pendant
+  doesn't appear in System Settings > Bluetooth to pair manually either
+  (it's BLE-only, not a classic Bluetooth device - see Section 2.5). Run
+  `python3 -m pendant.cli explore` instead - it's fully read-only, sends no
+  commands, and just lists everything the device exposes. Send back its log
+  either way; that's the next piece of information needed to figure out how
+  to unblock this.
 - **Everything logs to `data/logs/`:** if anything goes wrong, the easiest
   way to report it is to attach the newest file(s) from that folder rather
   than copy-pasting Terminal output.

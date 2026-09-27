@@ -23,6 +23,28 @@ PENDANT_CHARACTERISTIC_UUIDS = {
     "da2e7828-fbce-4e01-ae9e-261174997c48": "Bidirectional Data",
 }
 
+# Standard Bluetooth SIG services/characteristics that may be exposed
+# alongside the custom protocol - reading these can sometimes trigger BLE
+# bonding automatically if they require encryption (see the "explore"
+# command, and pendant-cli's PROTOCOL.md note that battery level is read
+# from the standard service "reliably").
+BATTERY_SERVICE_UUID = "0000180f-0000-1000-8000-00805f9b34fb"
+BATTERY_LEVEL_CHAR_UUID = "00002a19-0000-1000-8000-00805f9b34fb"
+DEVICE_INFO_SERVICE_UUID = "0000180a-0000-1000-8000-00805f9b34fb"
+
+KNOWN_STANDARD_UUIDS = {
+    "00001800-0000-1000-8000-00805f9b34fb": "Generic Access (standard)",
+    "00001801-0000-1000-8000-00805f9b34fb": "Generic Attribute (standard)",
+    DEVICE_INFO_SERVICE_UUID: "Device Information (standard)",
+    BATTERY_SERVICE_UUID: "Battery Service (standard)",
+    BATTERY_LEVEL_CHAR_UUID: "Battery Level (standard)",
+    "00002a29-0000-1000-8000-00805f9b34fb": "Manufacturer Name (standard)",
+    "00002a24-0000-1000-8000-00805f9b34fb": "Model Number (standard)",
+    "00002a25-0000-1000-8000-00805f9b34fb": "Serial Number (standard)",
+    "00002a26-0000-1000-8000-00805f9b34fb": "Firmware Revision (standard)",
+    "00002a27-0000-1000-8000-00805f9b34fb": "Hardware Revision (standard)",
+}
+
 # A timestamp below this is almost certainly device uptime / unsynced clock,
 # not a real wall-clock time (Jan 1, 2020).
 MIN_VALID_TIMESTAMP_MS = 1577836800000

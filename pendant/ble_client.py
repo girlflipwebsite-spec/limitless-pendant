@@ -36,9 +36,16 @@ from datetime import datetime
 from typing import Callable, Optional
 
 from .audio_store import DownloadedPage, RecordingAssembler, Recording, save_recording
-from .config import AUDIO_DATA_CHAR_UUID, AUDIO_SERVICE_UUID, CONTROL_CHAR_UUID
+from .config import (
+    AUDIO_DATA_CHAR_UUID,
+    AUDIO_SERVICE_UUID,
+    CONTROL_CHAR_UUID,
+    KNOWN_STANDARD_UUIDS,
+)
 from .protocol import PendantProtocol
 from .sync_state import SyncState
+
+READ_TIMEOUT_SEC = 10.0
 
 # How long to wait after the last StorageBufferMsg page before deciding the
 # download is finished. The protocol has no explicit "download complete"
@@ -160,6 +167,37 @@ class PendantClient:
 
         await self._client.start_notify(AUDIO_DATA_CHAR_UUID, self._notification_handler)
         return True
+
+    async def explore_services(self) -> None:
+        """List every GATT service/characteristic this device exposes, and
+        try reading any standard (non-custom) readable characteristics.
+
+        Purely read-only and diagnostic - sends no protocol commands at all.
+        Useful for two things: (1) seeing exactly what's really on the
+        device instead of guessing from PROTOCOL.md, and (2) a standard
+        characteristic read can sometimes trigger BLE bonding automatically
+        if that characteristic requires encryption, which might be the
+        missing piece for the custom protocol commands to get a response.
+        """
+        for service in self._client.services:
+            name = KNOWN_STANDARD_UUIDS.get(service.uuid.lower(), "")
+            self._log(f"Service {service.uuid} {name}")
+            for char in service.characteristics:
+                char_name = KNOWN_STANDARD_UUIDS.get(char.uuid.lower(), "")
+                props = ",".join(char.properties)
+                self._log(f"  Characteristic {char.uuid} [{props}] {char_name}")
+
+                # Only try reading standard (Bluetooth SIG) characteristics
+                # here - custom Pendant characteristics are handled through
+                # the actual protocol commands, not raw reads.
+                if "read" in char.properties and char.uuid.lower() in KNOWN_STANDARD_UUIDS:
+                    try:
+                        value = await asyncio.wait_for(
+                            self._client.read_gatt_char(char.uuid), timeout=READ_TIMEOUT_SEC
+                        )
+                        self._log(f"    -> read succeeded: {bytes(value).hex()}")
+                    except Exception as exc:
+                        self._log(f"    -> read failed: {exc}")
 
     async def disconnect(self) -> None:
         if self._client and self._client.is_connected:
