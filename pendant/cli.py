@@ -69,6 +69,30 @@ async def _connected_client(log) -> PendantClient:
     return client
 
 
+async def _best_effort_sync_time(client: PendantClient, log) -> None:
+    """Try to sync the clock before other commands, matching the documented
+    flow (see PROTOCOL.md). Never fatal - if it times out we still attempt
+    the real command afterwards, since we don't know for certain the device
+    requires this first."""
+    try:
+        await client.sync_time()
+        log.echo("Clock synced.")
+    except asyncio.TimeoutError:
+        log.echo("[warn] clock sync got no response within the timeout - trying the actual command anyway.")
+
+
+def _no_response_help(log) -> None:
+    log.echo("")
+    log.echo("No response from the device within the timeout. This usually means one of:")
+    log.echo("  - it isn't bonded with this Mac yet - try pairing it once via System")
+    log.echo("    Settings > Bluetooth, then re-run this command")
+    log.echo("  - it went back to sleep - tap it to wake it, then re-run")
+    log.echo("  - it's currently connected to your phone via the official Limitless app")
+    log.echo("    (only one device can hold its BLE connection at a time)")
+    log.echo("Please send this log file back either way - the debug lines above show exactly")
+    log.echo("what was sent and whether anything came back at all.")
+
+
 @cli.command()
 def status():
     """Read device status: recording state, storage %, battery."""
@@ -76,7 +100,13 @@ def status():
         async def run():
             client = await _connected_client(log)
             try:
-                status = await client.get_status()
+                log.echo("")
+                await _best_effort_sync_time(client, log)
+                try:
+                    status = await client.get_status()
+                except asyncio.TimeoutError:
+                    _no_response_help(log)
+                    raise click.ClickException("Device did not respond to a status request.")
                 log.echo("")
                 log.echo(f"Recording: {status.get('is_recording')}")
                 log.echo(f"Storage used: {status.get('storage_used_percent')}%")
@@ -97,7 +127,13 @@ def info():
         async def run():
             client = await _connected_client(log)
             try:
-                info = await client.get_info()
+                log.echo("")
+                await _best_effort_sync_time(client, log)
+                try:
+                    info = await client.get_info()
+                except asyncio.TimeoutError:
+                    _no_response_help(log)
+                    raise click.ClickException("Device did not respond to an info request.")
                 log.echo("")
                 log.echo(f"Device name: {info.get('device_name')}")
                 log.echo(f"Firmware: {info.get('firmware_version')}")
@@ -118,11 +154,13 @@ def sync():
             client = await _connected_client(log)
             try:
                 log.echo("")
-                await client.sync_time()
-                log.echo("Clock synced.")
+                await _best_effort_sync_time(client, log)
 
                 sync_state = SyncState()
                 result = await client.sync_recordings(sync_state)
+
+                if result.pages_received == 0:
+                    _no_response_help(log)
 
                 log.echo("")
                 log.echo(f"Pages received: {result.pages_received}")

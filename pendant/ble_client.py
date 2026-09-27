@@ -89,6 +89,7 @@ class PendantClient:
             self._log(f"  [warn] failed to parse BLE envelope: {exc}")
             return
         if payload is None:
+            self._log(f"  [debug] received BLE fragment ({len(data)} bytes), waiting for the rest")
             return  # waiting on more fragments
 
         try:
@@ -98,6 +99,7 @@ class PendantClient:
             return
 
         rtype = response.get("type")
+        self._log(f"  [debug] received response type={rtype!r} ({len(payload)} bytes)")
 
         if rtype == "battery_status":
             self._battery_level = response
@@ -169,6 +171,7 @@ class PendantClient:
 
     async def _send(self, cmd_type: str, **kwargs) -> None:
         cmd = self.protocol.create_command(cmd_type, **kwargs)
+        self._log(f"  [debug] sending command {cmd_type!r} ({len(cmd)} bytes)")
         await self._client.write_gatt_char(CONTROL_CHAR_UUID, cmd, response=False)
 
     async def _request(self, cmd_type: str, awaited_response_type: str, **kwargs) -> dict:

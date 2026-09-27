@@ -210,4 +210,14 @@ Do not resolve these unilaterally in code, surface them and wait for an answer:
 
 **2026-09-18 update:** client relayed Limitless's own support content confirming the Pendant is BLE-only and isn't manually paired via System Settings like a normal Bluetooth device (see Section 7.2). Removed the incorrect "pair via System Settings first" instruction from README.md and the corresponding assumption from `pendant/ble_client.py`'s docstring - the tool now relies on `scan` + `connect` alone, with any bonding expected to happen automatically (possibly via a one-time macOS pairing popup). Still unverified on real hardware.
 
-**Hours so far:** ~1 session of initial build-out (proto/protocol/BLE client/audio pipeline/tests/docs). Nowhere near the 30-hour cap yet; the hour-16 checkpoint has not been reached because no hardware test has happened yet.
+**2026-09-27 update - first real hardware test:** client ran `python -m pendant.cli status` on their actual Mac and Pendant. Good news: `scan` + `connect` succeeded on the first real attempt - no manual System Settings pairing was needed, no exception, `start_notify` enabled fine. That resolves the Section 7.2 question in the "no pairing needed" direction.
+
+New finding: after connecting, `get_device_status` was sent (write succeeded, no GATT error) but no `device_status` response ever came back within the 15s timeout, raising `asyncio.TimeoutError` in `pendant/ble_client.py::_request`. Per PROTOCOL.md's explicit warning ("The Pendant will NOT respond to any commands until it is properly bonded"), the leading theory is that the GATT-level connection succeeded but the device's firmware is still waiting on a lower-level bond/encryption handshake that a plain `connect()` doesn't trigger on macOS - CoreBluetooth only prompts for pairing when a characteristic explicitly requires it, and apparently this one doesn't in a way that's forcing that here. Not yet confirmed; could also be a missing handshake step (e.g. needing `SetCurrentTime` first) rather than bonding specifically.
+
+Added in response, all pushed:
+- `pendant/ble_client.py`: logs every sent command and every received notification (type + byte length), including partial fragments - previously silent, so the next log will show definitively whether the device replies with *anything* at all
+- `pendant/cli.py`: `status`/`info`/`sync` now attempt a best-effort clock sync first (matching the documented flow) and, on a timeout, print concrete next steps (try pairing via System Settings as a fallback despite the above, tap the device awake, make sure it's not connected to the phone app) instead of a raw Python traceback
+
+Next step: waiting on the client to re-run `status` with this updated code and send back the new, more detailed log.
+
+**Hours so far:** ~2 sessions (initial build-out, then this round of hardware-informed fixes). Still nowhere near the 30-hour cap. The hour-16 checkpoint is not yet met - we have a real connection but no successful command response yet, so neither "a recording downloaded" nor "a fully clear picture of the blocker" is true yet.

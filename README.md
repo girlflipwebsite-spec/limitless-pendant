@@ -322,10 +322,14 @@ never gets uploaded to the code repository.
   awake (tap it), and isn't currently connected to your phone via the
   official Limitless app - only one device can hold the Bluetooth connection
   at a time.
-- **`status`/`info` hang after `scan` succeeds:** this is exactly the kind
-  of thing to report back (see [3.4](#34-what-to-send-back)) - it likely
-  means the device needs a bonding step we haven't accounted for yet, or a
-  macOS pairing popup appeared somewhere that needs a response.
+- **`status`/`info` connects fine but then times out with no response:**
+  we've seen this happen on real hardware. The command will now print a
+  short explanation and some things to try (pair it once via System
+  Settings > Bluetooth as a fallback, tap it to wake it, make sure it's not
+  connected to your phone right now). Try those, then re-run the command.
+  Either way, the log now records every message sent and received, so
+  please send it back (see [3.4](#34-what-to-send-back)) even if retrying
+  doesn't help - that detail is exactly what we need to track this down.
 - **Everything logs to `data/logs/`:** if anything goes wrong, the easiest
   way to report it is to attach the newest file(s) from that folder rather
   than copy-pasting Terminal output.
