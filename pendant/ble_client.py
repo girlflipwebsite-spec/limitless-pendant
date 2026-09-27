@@ -209,8 +209,15 @@ class PendantClient:
 
     async def _send(self, cmd_type: str, **kwargs) -> None:
         cmd = self.protocol.create_command(cmd_type, **kwargs)
-        self._log(f"  [debug] sending command {cmd_type!r} ({len(cmd)} bytes)")
-        await self._client.write_gatt_char(CONTROL_CHAR_UUID, cmd, response=False)
+        self._log(f"  [debug] sending command {cmd_type!r} ({len(cmd)} bytes, write-with-response)")
+        # Diagnostic change: explore confirmed the Control characteristic
+        # supports both "write" and "write-without-response". Using a real
+        # Write Request (response=True) gets a GATT-level acknowledgement
+        # that the peripheral's application actually received the bytes,
+        # which write-without-response never confirms. If this succeeds but
+        # we still get no notification back, that further isolates the
+        # problem to command *processing*, not delivery.
+        await self._client.write_gatt_char(CONTROL_CHAR_UUID, cmd, response=True)
 
     async def _request(self, cmd_type: str, awaited_response_type: str, **kwargs) -> dict:
         """Send a command and wait for the matching response type."""
