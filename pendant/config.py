@@ -54,6 +54,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.environ.get("PENDANT_DATA_DIR", PROJECT_ROOT / "data"))
 RECORDINGS_DIR = DATA_DIR / "recordings"       # recordings/<YYYY-MM-DD>/*.opus,*.wav
 TRANSCRIPTS_DIR = DATA_DIR / "transcripts"     # transcripts/<YYYY-MM-DD>.md
+AUDIO_EXPORTS_DIR = DATA_DIR / "audio_exports"  # combined listen-back WAV files for a day/range
 LOGS_DIR = DATA_DIR / "logs"                   # diagnostic logs to send back to the developer
 SYNC_STATE_PATH = DATA_DIR / "sync_state.json"
 

@@ -271,6 +271,19 @@ This combines every day in that range into one file,
 `data/transcripts/2026-09-01_to_2026-09-30.md`, with a heading per day. Days
 with no recordings in that range are just skipped, not an error.
 
+### Want to listen back instead of reading?
+
+```bash
+python3 -m pendant.cli combine-audio 2026-09-12
+python3 -m pendant.cli combine-audio 2026-09-01 --to 2026-09-30
+```
+
+Same idea as `transcribe`, but produces one playable `.wav` file instead of
+text - all of that day's (or range's) recordings joined together in order,
+with a short pause between each, saved to `data/audio_exports/`. This
+doesn't try to recreate real gaps between recordings (those could be hours
+long) - it's just the actual recorded audio, back to back.
+
 ---
 
 ## 6. Everyday use (the one-button way)
@@ -302,6 +315,7 @@ environment active (`source .venv/bin/activate`) and `PENDANT_ADDRESS` set
 | `sync` | Downloads new recordings, saves to `data/recordings/` | Read-only download |
 | `decode <file.opus>` | Converts one recording to a playable `.wav` | No (local file only) |
 | `transcribe <YYYY-MM-DD> [--to <date>]` | Builds a transcript for one day, or a combined one for a date range | No (local files only) |
+| `combine-audio <YYYY-MM-DD> [--to <date>]` | Joins that day's (or range's) recordings into one playable `.wav` | No (local files only) |
 
 None of these commands can delete, reset, or reconfigure the Pendant - that
 capability doesn't exist in this tool at all (see `CLAUDE.md` Section 4).
@@ -317,6 +331,7 @@ automatically, never uploaded anywhere):
 data/
   recordings/<YYYY-MM-DD>/    original .opus + .wav recordings, one folder per day
   transcripts/<YYYY-MM-DD>.md the daily transcript, ready for ChatGPT
+  audio_exports/               combined .wav files from `combine-audio`
   logs/                       one log file per command you've run
   sync_state.json             tracks what's already been downloaded
 ```

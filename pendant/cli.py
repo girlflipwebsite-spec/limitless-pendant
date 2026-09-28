@@ -7,10 +7,11 @@ Usage:
     python -m pendant.cli explore
     python -m pendant.cli sync
     python -m pendant.cli decode <opus_file>
-    python -m pendant.cli transcribe <YYYY-MM-DD> [--format md|txt|json]
+    python -m pendant.cli transcribe <YYYY-MM-DD> [--to <date>] [--format md|txt|json]
+    python -m pendant.cli combine-audio <YYYY-MM-DD> [--to <date>]
 
-All commands except `decode`/`transcribe` need PENDANT_ADDRESS set - run
-`scan` first to find it.
+All commands except `decode`/`transcribe`/`combine-audio` need
+PENDANT_ADDRESS set - run `scan` first to find it.
 """
 
 import asyncio
@@ -222,6 +223,22 @@ def decode(input_file, output_file):
 
     stats = decode_opus_file(input_file, output_file)
     click.echo(f"Decoded {stats.frame_count} frames, {stats.duration_sec:.1f}s -> {output_file}")
+
+
+@cli.command("combine-audio")
+@click.argument("date", metavar="YYYY-MM-DD")
+@click.option(
+    "--to", "end_date", metavar="YYYY-MM-DD", default=None,
+    help="End date (inclusive) for a range. Omit to combine just one day."
+)
+def combine_audio(date, end_date):
+    """Combine a day's (or a date range's) recordings into one playable WAV
+    file, in order, with a short gap between clips - for listening back to
+    a stretch of time directly, not just reading the transcript."""
+    from .audio_export import combine_audio_range
+
+    out_path = combine_audio_range(date, end_date or date)
+    click.echo(f"Wrote {out_path}")
 
 
 @cli.command()
