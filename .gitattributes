@@ -1,0 +1,4 @@
+# The .command launcher must always have Unix line endings - a CRLF
+# shebang line breaks it on macOS ("bad interpreter" error).
+*.command text eol=lf
+*.sh text eol=lf

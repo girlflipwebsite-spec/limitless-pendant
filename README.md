@@ -170,10 +170,8 @@ python3 -m pendant.cli info
 **What should happen:**
 
 ```
-Device name: Pendant
-Firmware: 2.1.6
-Hardware: rev-b
-Serial: XXXXXXXX
+Firmware: 1.1.20 b312ca1efaaa
+MAC address: fe8618c23cc0
 ```
 
 ### 3.4 What to send back
@@ -310,7 +308,7 @@ environment active (`source .venv/bin/activate`) and `PENDANT_ADDRESS` set
 |---|---|---|
 | `scan` | Lists nearby Bluetooth devices, flags the Pendant | No (listen-only) |
 | `status` | Battery %, storage %, recording state | Read-only |
-| `info` | Firmware/hardware/serial number | Read-only |
+| `info` | Firmware version and MAC address | Read-only |
 | `explore` | Lists every service/characteristic on the device (diagnostic) | Read-only |
 | `sync` | Downloads new recordings, saves to `data/recordings/` | Read-only download |
 | `decode <file.opus>` | Converts one recording to a playable `.wav` | No (local file only) |
@@ -329,11 +327,11 @@ automatically, never uploaded anywhere):
 
 ```
 data/
-  recordings/<YYYY-MM-DD>/    original .opus + .wav recordings, one folder per day
-  transcripts/<YYYY-MM-DD>.md the daily transcript, ready for ChatGPT
+  recordings/<YYYY-MM-DD>/     original .opus + .wav recordings, one folder per day
+  transcripts/<YYYY-MM-DD>.md  the daily transcript, ready for ChatGPT
   audio_exports/               combined .wav files from `combine-audio`
-  logs/                       one log file per command you've run
-  sync_state.json             tracks what's already been downloaded
+  logs/                        one log file per command you've run
+  sync_state.json              tracks what's already been downloaded
 ```
 
 This whole `data/` folder is yours - back it up however you'd like (Time

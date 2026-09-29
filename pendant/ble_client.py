@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Callable, Optional
 
-from .audio_store import DownloadedPage, RecordingAssembler, Recording, save_recording
+from .audio_store import DownloadedPage, RecordingAssembler, save_recording
 from .config import (
     AUDIO_DATA_CHAR_UUID,
     AUDIO_SERVICE_UUID,

@@ -46,7 +46,7 @@ def scan(duration):
                 rssi = f" (RSSI {r.rssi})" if r.rssi is not None else ""
                 log.echo(f"  {r.address}  {r.name or 'Unknown'}{rssi}  [{r.match_reason}]")
             log.echo("")
-            log.echo(f"Set this before running other commands:")
+            log.echo("Set this before running other commands:")
             log.echo(f"  export PENDANT_ADDRESS=\"{pendants[0].address}\"")
         else:
             log.echo("No Pendant found in this scan.")

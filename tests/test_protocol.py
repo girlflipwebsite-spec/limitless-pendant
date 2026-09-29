@@ -1,6 +1,6 @@
 import pytest
 
-from pendant.protocol import PendantProtocol, ALLOWED_COMMANDS
+from pendant.protocol import PendantProtocol
 from pendant.proto_loader import pb
 
 

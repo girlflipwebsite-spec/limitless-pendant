@@ -4,7 +4,6 @@ when reporting results back (see project plan Section 8: "prepare clear
 step-by-step instructions and specific log output to request from the
 client")."""
 
-import sys
 from datetime import datetime
 from pathlib import Path
 

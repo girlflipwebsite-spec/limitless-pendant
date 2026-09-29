@@ -1,6 +1,5 @@
 #!/bin/bash
 # Double-click this file in Finder to sync the Pendant and update today's transcript.
-set -e
 cd "$(dirname "$0")"
 
 if [ -d ".venv" ]; then
@@ -17,7 +16,13 @@ if [ -z "$PENDANT_ADDRESS" ]; then
 fi
 
 echo "Syncing Pendant..."
-python3 -m pendant.cli sync
+if ! python3 -m pendant.cli sync; then
+    echo ""
+    echo "Sync failed - see the message above, and check the newest file in"
+    echo "data/logs/ for details."
+    read -n 1 -s -r -p "Press any key to close..."
+    exit 1
+fi
 
 TODAY=$(date +%Y-%m-%d)
 echo ""
