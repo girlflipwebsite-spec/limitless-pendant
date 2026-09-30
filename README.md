@@ -131,16 +131,14 @@ Bluetooth devices, with something like this for the Pendant:
 Pendant devices found:
   XX:XX:XX:XX:XX:XX  Pendant  (RSSI -50)  [name match]
 
-Set this before running other commands:
-  export PENDANT_ADDRESS="XX:XX:XX:XX:XX:XX"
+Saved as the address to use for other commands: XX:XX:XX:XX:XX:XX
+(You don't need to do anything else - this is remembered automatically.)
 ```
 
-**What to do:** copy that `export PENDANT_ADDRESS="..."` line exactly and
-run it in the same Terminal window. This tells the tool which device to talk
-to for the rest of your session.
-
-To make this permanent (so you don't retype it every time), also add that
-same line to the end of your `~/.zshrc` file.
+That's it - nothing to copy or type. `scan` remembers the address on its own
+(saved to `data/pendant_address.txt`), so every other command, including
+double-clicking `Sync Pendant.command`, just works from here on. You only
+need to run `scan` again if you ever use a different Pendant.
 
 **If no Pendant is found:** make sure it's powered on and awake (tap it),
 and that it isn't currently connected to your phone via the official
@@ -300,9 +298,9 @@ file, choose **Open**, and confirm once; it will run normally after that.)
 
 ## 7. Command reference
 
-All commands start with `python3 -m pendant.cli` and need the virtual
-environment active (`source .venv/bin/activate`) and `PENDANT_ADDRESS` set
-(from `scan`).
+All commands that talk to the device need the virtual environment active
+(`source .venv/bin/activate`) and `scan` to have been run at least once
+(it remembers the address automatically after that).
 
 | Command | What it does | Touches the device? |
 |---|---|---|
@@ -332,6 +330,7 @@ data/
   audio_exports/               combined .wav files from `combine-audio`
   logs/                        one log file per command you've run
   sync_state.json              tracks what's already been downloaded
+  pendant_address.txt          saved automatically by `scan`
 ```
 
 This whole `data/` folder is yours - back it up however you'd like (Time

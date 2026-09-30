@@ -20,7 +20,7 @@ import sys
 import click
 
 from .ble_client import PendantClient, scan_for_pendants
-from .config import get_pendant_address
+from .config import get_pendant_address, save_pendant_address
 from .logging_utils import SessionLog
 from .sync_state import SyncState
 
@@ -45,9 +45,10 @@ def scan(duration):
             for r in pendants:
                 rssi = f" (RSSI {r.rssi})" if r.rssi is not None else ""
                 log.echo(f"  {r.address}  {r.name or 'Unknown'}{rssi}  [{r.match_reason}]")
+            save_pendant_address(pendants[0].address)
             log.echo("")
-            log.echo("Set this before running other commands:")
-            log.echo(f"  export PENDANT_ADDRESS=\"{pendants[0].address}\"")
+            log.echo(f"Saved as the address to use for other commands: {pendants[0].address}")
+            log.echo("(You don't need to do anything else - this is remembered automatically.)")
         else:
             log.echo("No Pendant found in this scan.")
             log.echo(
@@ -64,7 +65,11 @@ def scan(duration):
 
 
 async def _connected_client(log) -> PendantClient:
-    client = PendantClient(get_pendant_address(), log=log.echo)
+    try:
+        address = get_pendant_address()
+    except RuntimeError as exc:
+        raise click.ClickException(str(exc))
+    client = PendantClient(address, log=log.echo)
     connected = await client.connect()
     if not connected:
         raise click.ClickException("Could not connect - see log above for details.")

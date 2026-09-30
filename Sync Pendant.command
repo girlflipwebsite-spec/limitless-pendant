@@ -6,15 +6,6 @@ if [ -d ".venv" ]; then
     source .venv/bin/activate
 fi
 
-if [ -z "$PENDANT_ADDRESS" ]; then
-    echo "PENDANT_ADDRESS is not set."
-    echo "Run 'python3 -m pendant.cli scan' once to find your Pendant's address,"
-    echo "then add this line to your ~/.zshrc (or ~/.bash_profile):"
-    echo "  export PENDANT_ADDRESS=\"<address-from-scan>\""
-    read -n 1 -s -r -p "Press any key to close..."
-    exit 1
-fi
-
 echo "Syncing Pendant..."
 if ! python3 -m pendant.cli sync; then
     echo ""
