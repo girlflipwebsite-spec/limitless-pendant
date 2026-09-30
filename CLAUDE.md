@@ -266,4 +266,18 @@ Next: `python -m pendant.cli decode` one of the saved `.opus` files, confirm it 
 
 Root cause was relying on shell config files for state that should just be the app's own concern. Fixed properly rather than patching around it: `pendant/config.py` now has `save_pendant_address()`/`get_pendant_address()` backed by a plain file at `data/pendant_address.txt` (env var `PENDANT_ADDRESS` still overrides it, for anyone who wants that). `scan` (`pendant/cli.py`) now saves the found address there automatically - no more "copy this export line" instructions at all. `_connected_client()` catches a missing address and raises a clean `click.ClickException` instead of a raw traceback. `Sync Pendant.command` no longer needs its own address pre-check. Updated README.md Section 3.1 and the command reference to match. New coverage in `tests/test_config.py` (env var override, save/read round-trip, missing-address error) - all passing, no hardware needed.
 
+**2026-09-30 follow-up - `Sync Pendant.command` confirmed working:** re-ran `scan` (to save the address via the new file-based mechanism) then double-clicked the launcher on the real Mac - works correctly now, no more shell-dependency issue.
+
+## PROJECT STATUS: all core goals from Section 2 confirmed working end-to-end on the client's real hardware
+
+- Connect: `scan` + `status`/`info` - confirmed
+- Download: `sync` - confirmed, not encrypted, sync-state avoids re-downloading
+- Organize: date folders - confirmed
+- Transcribe: `transcribe` (single day and date range) - confirmed on a real recording
+- Export: Markdown/TXT/JSON, plus a combined-audio option beyond the original spec - confirmed
+- One-button: `Sync Pendant.command` - confirmed
+- Safety: read-only allowlist verified, no destructive command reachable from any code path
+
+Remaining items are optional polish, not blockers: `device_info`'s fuller field mapping is still only partially decoded (Section 7.2 area - cosmetic, doesn't affect sync/transcribe/export), and ongoing day-to-day use will surface anything else.
+
 **Hours so far:** ~3-4 sessions (initial build-out, hardware-informed protocol fixes, the hour-16 checkpoint, and this final review + address-persistence fix). Still well under the 30-hour cap.
