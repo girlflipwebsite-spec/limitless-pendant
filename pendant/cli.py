@@ -9,9 +9,12 @@ Usage:
     python -m pendant.cli decode <opus_file>
     python -m pendant.cli transcribe <YYYY-MM-DD> [--to <date>] [--format md|txt|json]
     python -m pendant.cli combine-audio <YYYY-MM-DD> [--to <date>]
+    python -m pendant.cli gui
 
-All commands except `decode`/`transcribe`/`combine-audio` need
-PENDANT_ADDRESS set - run `scan` first to find it.
+Commands that talk to the device need `scan` to have been run at least
+once (it remembers the address automatically after that). `gui` opens a
+browser-based interface covering sync + date-based export, for anyone who
+prefers not to type commands.
 """
 
 import asyncio
@@ -269,6 +272,23 @@ def transcribe(date, end_date, output_format):
 
         out_path = export_daily_transcript(date, output_format=output_format)
     click.echo(f"Wrote {out_path}")
+
+
+@cli.command()
+@click.option("--port", default=5151, help="Local port to serve on.")
+def gui(port):
+    """Open a local web page for syncing and exporting by date - no CLI
+    commands needed. Only reachable from this Mac (127.0.0.1), nothing is
+    uploaded anywhere."""
+    import threading
+    import webbrowser
+
+    from .webapp import run as run_webapp
+
+    url = f"http://127.0.0.1:{port}"
+    click.echo(f"Opening {url} - close this window to stop the server.")
+    threading.Timer(1.0, lambda: webbrowser.open(url)).start()
+    run_webapp(port=port)
 
 
 def main():

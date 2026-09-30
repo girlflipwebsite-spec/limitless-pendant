@@ -292,7 +292,21 @@ double-click:
 today's transcript automatically, then tells you where to find it.
 
 (The first time, macOS may warn "unidentified developer" - right-click the
-file, choose **Open**, and confirm once; it will run normally after that.)
+file, choose **Open**, and confirm once; it will run normally after that.
+Same for the app below.)
+
+### Prefer clicking over typing dates?
+
+**Double-click `Pendant App.command`** instead. It opens a simple page in
+your web browser where you can:
+- Click **Sync Pendant**
+- Pick a date (or a date range) from a calendar and click **Export** to get
+  a transcript or a combined audio file, with a **Download** link when it's
+  ready
+
+Nothing here is uploaded anywhere - the page only talks to this Mac
+(`127.0.0.1`), the same way the CLI commands do. Close the Terminal window
+that opens behind it to stop the server when you're done.
 
 ---
 
@@ -312,6 +326,7 @@ All commands that talk to the device need the virtual environment active
 | `decode <file.opus>` | Converts one recording to a playable `.wav` | No (local file only) |
 | `transcribe <YYYY-MM-DD> [--to <date>]` | Builds a transcript for one day, or a combined one for a date range | No (local files only) |
 | `combine-audio <YYYY-MM-DD> [--to <date>]` | Joins that day's (or range's) recordings into one playable `.wav` | No (local files only) |
+| `gui` | Opens the browser-based interface (sync + date-based export) | Read-only, same as `sync` |
 
 None of these commands can delete, reset, or reconfigure the Pendant - that
 capability doesn't exist in this tool at all (see `CLAUDE.md` Section 4).

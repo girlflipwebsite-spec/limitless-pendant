@@ -280,4 +280,16 @@ Root cause was relying on shell config files for state that should just be the a
 
 Remaining items are optional polish, not blockers: `device_info`'s fuller field mapping is still only partially decoded (Section 7.2 area - cosmetic, doesn't affect sync/transcribe/export), and ongoing day-to-day use will surface anything else.
 
-**Hours so far:** ~3-4 sessions (initial build-out, hardware-informed protocol fixes, the hour-16 checkpoint, and this final review + address-persistence fix). Still well under the 30-hour cap.
+**2026-09-30 follow-up - optional web GUI added (scope note):** the developer asked whether a friendlier interface was possible - picking dates and exporting without typing CLI commands. This goes beyond Section 3's "Explicit Non-Goals: Fancy graphics/UI polish" and Section 5's "a `.command` file is enough, no native app needed," so it was flagged and confirmed as a deliberate scope addition before building, not assumed. Built as a local-only web page (Flask, bound to `127.0.0.1` only - never network-reachable, so it doesn't become the "cloud dashboard" Section 3 rules out) rather than a native macOS app, keeping the "no Xcode/Mac build machine needed" constraint from Section 5 intact:
+
+- `pendant/webapp.py` - the page (sync button, date-range pickers for transcript/audio export, download links) and Flask routes
+- `pendant/jobs.py` - tiny in-memory background job runner so sync/transcribe (which can take minutes) don't hang the browser request; the page polls for progress
+- `pendant/cli.py`: new `gui` command opens the page in the default browser
+- `Pendant App.command` - launcher, parallel to `Sync Pendant.command`
+- Calls the exact same underlying functions the CLI already uses (`PendantClient.sync_recordings()`, `transcript_export`, `audio_export`) - no new way to talk to the Pendant, so the existing `ALLOWED_COMMANDS` safety allowlist still covers everything the GUI can trigger
+- Fixed a latent bug found while building this: `transcript_export.py`/`audio_export.py`'s functions had their data-directory defaults bound to `config.RECORDINGS_DIR` etc. *at import time* (a classic Python mutable-default-argument gotcha), so overriding `config.RECORDINGS_DIR` afterward - which the GUI's tests needed to do - was silently ignored. Changed those defaults to `None`, resolved against the live `config` module inside each function body instead. Not currently a bug for the CLI (env vars are read before anything imports), but this was a real correctness gap.
+- `tests/test_webapp.py` + `tests/test_config.py` additions: full route coverage (index page, export+download round-trip for both transcript and audio, unknown job, download-before-done, sync route failing cleanly with no saved address) using Flask's test client and the same recording-fixture pattern as the other export tests. Also smoke-tested against a real running server (not just the test client) to confirm actual HTTP/threading behavior. All passing, no hardware needed.
+
+Not yet tested on the client's actual Mac (the whole point of a background-thread job runner is exactly the kind of thing that behaves differently under real conditions) - next step is running `Pendant App.command` there and trying a real sync + export through the browser.
+
+**Hours so far:** ~3-4 sessions (initial build-out, hardware-informed protocol fixes, the hour-16 checkpoint, this final review + address-persistence fix, and the web GUI addition). Still well under the 30-hour cap.

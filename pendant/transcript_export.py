@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from .config import RECORDINGS_DIR, TRANSCRIPTS_DIR
+from . import config
 from .opus_decoder import decode_opus_file
 from .transcribe import DEFAULT_MODEL_SIZE, TranscriptSegment, transcribe_wav
 
@@ -40,11 +40,12 @@ def _recording_start(opus_path: Path, date_str: str) -> datetime:
 
 def transcribe_day(
     date_str: str,
-    recordings_dir: Path = RECORDINGS_DIR,
+    recordings_dir: Path = None,
     model_size: str = DEFAULT_MODEL_SIZE,
 ) -> list[RecordingTranscript]:
     """Decode + transcribe every recording in recordings/<date_str>/, in
     chronological order."""
+    recordings_dir = recordings_dir if recordings_dir is not None else config.RECORDINGS_DIR
     day_dir = recordings_dir / date_str
     if not day_dir.exists():
         raise FileNotFoundError(f"No recordings folder for {date_str}: {day_dir}")
@@ -118,12 +119,14 @@ _EXTENSIONS = {"md": ".md", "txt": ".txt", "json": ".json"}
 
 def export_daily_transcript(
     date_str: str,
-    recordings_dir: Path = RECORDINGS_DIR,
-    transcripts_dir: Path = TRANSCRIPTS_DIR,
+    recordings_dir: Path = None,
+    transcripts_dir: Path = None,
     model_size: str = DEFAULT_MODEL_SIZE,
     output_format: str = "md",
 ) -> Path:
     """Transcribe the whole day and write one export file. Returns its path."""
+    recordings_dir = recordings_dir if recordings_dir is not None else config.RECORDINGS_DIR
+    transcripts_dir = transcripts_dir if transcripts_dir is not None else config.TRANSCRIPTS_DIR
     if output_format not in _FORMATTERS:
         raise ValueError(f"Unknown output_format {output_format!r}, expected one of {list(_FORMATTERS)}")
 
@@ -150,12 +153,13 @@ def _iter_dates(start_date: str, end_date: str):
 def transcribe_range(
     start_date: str,
     end_date: str,
-    recordings_dir: Path = RECORDINGS_DIR,
+    recordings_dir: Path = None,
     model_size: str = DEFAULT_MODEL_SIZE,
 ) -> dict[str, list[RecordingTranscript]]:
     """Decode + transcribe every recording across a date range (inclusive).
     Days with no recordings folder at all are skipped rather than erroring -
     a week/month export shouldn't fail just because one day is empty."""
+    recordings_dir = recordings_dir if recordings_dir is not None else config.RECORDINGS_DIR
     days: dict[str, list[RecordingTranscript]] = {}
     for date_str in _iter_dates(start_date, end_date):
         try:
@@ -238,13 +242,15 @@ _RANGE_FORMATTERS = {"md": _format_markdown_range, "txt": _format_txt_range, "js
 def export_transcript_range(
     start_date: str,
     end_date: str,
-    recordings_dir: Path = RECORDINGS_DIR,
-    transcripts_dir: Path = TRANSCRIPTS_DIR,
+    recordings_dir: Path = None,
+    transcripts_dir: Path = None,
     model_size: str = DEFAULT_MODEL_SIZE,
     output_format: str = "md",
 ) -> Path:
     """Transcribe a date range (inclusive) - e.g. a week or a month - and
     write one combined export file. Returns its path."""
+    recordings_dir = recordings_dir if recordings_dir is not None else config.RECORDINGS_DIR
+    transcripts_dir = transcripts_dir if transcripts_dir is not None else config.TRANSCRIPTS_DIR
     if output_format not in _RANGE_FORMATTERS:
         raise ValueError(f"Unknown output_format {output_format!r}, expected one of {list(_RANGE_FORMATTERS)}")
 

@@ -12,7 +12,7 @@ than mostly silence.
 import wave
 from pathlib import Path
 
-from .config import AUDIO_EXPORTS_DIR, RECORDINGS_DIR
+from . import config
 from .opus_decoder import CHANNELS, SAMPLE_RATE, decode_opus_file
 from .transcript_export import _iter_dates
 
@@ -27,13 +27,15 @@ def _silence(seconds: float) -> bytes:
 def combine_audio_range(
     start_date: str,
     end_date: str,
-    recordings_dir: Path = RECORDINGS_DIR,
-    output_dir: Path = AUDIO_EXPORTS_DIR,
+    recordings_dir: Path = None,
+    output_dir: Path = None,
 ) -> Path:
     """Decode and concatenate every recording between start_date and
     end_date (inclusive) into one WAV file, in chronological order. Days
     with no recordings folder are skipped, not an error. Returns the
     output path."""
+    recordings_dir = recordings_dir if recordings_dir is not None else config.RECORDINGS_DIR
+    output_dir = output_dir if output_dir is not None else config.AUDIO_EXPORTS_DIR
     opus_files: list[Path] = []
     for date_str in _iter_dates(start_date, end_date):
         day_dir = recordings_dir / date_str

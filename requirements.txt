@@ -9,3 +9,7 @@ opuslib>=3.0.1
 
 # Local transcription (Phase 4). CPU-only is fine for personal use.
 faster-whisper>=1.0.0
+
+# Local web interface (`pendant gui`). Runs only on 127.0.0.1, never exposed
+# to the network.
+flask>=3.0.0
