@@ -48,9 +48,15 @@ followed by Enter.
 python3 --version
 ```
 
-You need **3.11 or newer**. If it's missing or older:
-- Easiest: install from [python.org/downloads](https://www.python.org/downloads/) (download the macOS installer, run it like any app)
-- Alternative if you use Homebrew: `brew install python@3.12`
+You need a version between **3.11 and 3.13**. If it shows something
+outside that range (missing, older than 3.11, or 3.14+ - a few of our
+dependencies aren't compatible with brand-new Python versions yet), install
+3.12 specifically:
+- Easiest: download the 3.12 installer from
+  [python.org/downloads](https://www.python.org/downloads/) and run it like
+  any app
+- Alternative if you use Homebrew: `brew install python@3.12`, then use
+  `python3.12` instead of `python3` in the next step
 
 ### 2.2 Get the code
 
@@ -83,6 +89,11 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
+(If `python3 --version` showed something outside 3.11-3.13 in step 2.1,
+use that specific version here instead - e.g. `python3.12 -m venv .venv` -
+so the virtual environment doesn't inherit a Python version our
+dependencies don't support yet.)
 
 The `source .venv/bin/activate` step needs to be run **every time you open a
 new Terminal window** before running any `python3 -m pendant.cli ...`
@@ -356,6 +367,18 @@ never gets uploaded to the code repository.
 
 ## 9. Troubleshooting
 
+- **`transcribe` fails with an error mentioning `metadata_errors`, or other
+  strange errors only from the transcribe/GUI commands:** this means your
+  Mac's `python3` is a very new version (3.14+) that the transcription
+  library isn't compatible with yet. Fix:
+  ```bash
+  brew install python@3.12
+  rm -rf .venv
+  python3.12 -m venv .venv
+  source .venv/bin/activate
+  pip install -r requirements.txt
+  ```
+  Then re-run whatever command failed.
 - **"Device not found" during scan:** make sure the Pendant is powered on and
   awake (tap it), and isn't currently connected to your phone via the
   official Limitless app - only one device can hold the Bluetooth connection
