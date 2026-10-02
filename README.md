@@ -367,18 +367,15 @@ never gets uploaded to the code repository.
 
 ## 9. Troubleshooting
 
-- **`transcribe` fails with an error mentioning `metadata_errors`, or other
-  strange errors only from the transcribe/GUI commands:** this means your
-  Mac's `python3` is a very new version (3.14+) that the transcription
-  library isn't compatible with yet. Fix:
+- **`transcribe` fails with an error mentioning `metadata_errors`:** this
+  means `pip` installed a too-new version of the `av` package that the
+  transcription library isn't compatible with yet (already pinned in
+  `requirements.txt`, but if you installed before that fix landed):
   ```bash
-  brew install python@3.12
-  rm -rf .venv
-  python3.12 -m venv .venv
-  source .venv/bin/activate
   pip install -r requirements.txt
   ```
-  Then re-run whatever command failed.
+  (If `git pull` hasn't been run recently, do that first.) Then re-run
+  whatever command failed.
 - **"Device not found" during scan:** make sure the Pendant is powered on and
   awake (tap it), and isn't currently connected to your phone via the
   official Limitless app - only one device can hold the Bluetooth connection

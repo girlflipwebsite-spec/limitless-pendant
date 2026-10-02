@@ -9,6 +9,11 @@ opuslib>=3.0.1
 
 # Local transcription (Phase 4). CPU-only is fine for personal use.
 faster-whisper>=1.0.0
+# Pinned: faster-whisper's audio decoding calls av.open(..., metadata_errors=...),
+# a parameter PyAV removed in its v13+ rewrite. Without this pin, pip installs
+# whatever av is newest and transcribe fails with
+# "TypeError: open() got an unexpected keyword argument 'metadata_errors'".
+av<13
 
 # Local web interface (`pendant gui`). Runs only on 127.0.0.1, never exposed
 # to the network.
