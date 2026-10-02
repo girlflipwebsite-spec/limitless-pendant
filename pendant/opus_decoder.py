@@ -7,12 +7,46 @@ next byte matching the dominant TOC value. This mirrors the approach in
 pendant-cli's decoder, which was validated against real recordings.
 """
 
+import os
+import platform
+import subprocess
 import wave
 from dataclasses import dataclass, field
 
 SAMPLE_RATE = 16000
 CHANNELS = 1
 MAX_FRAME_SAMPLES = 960  # 60ms at 16kHz, the largest frame size we expect
+
+
+def _ensure_libopus_discoverable() -> None:
+    """`brew install opus` can still leave opuslib unable to find libopus:
+    on Apple Silicon Macs, Homebrew installs under /opt/homebrew, which
+    isn't always on the dynamic linker's default search path. opuslib's
+    ctypes lookup (via ctypes.util.find_library) does honor
+    DYLD_LIBRARY_PATH/DYLD_FALLBACK_LIBRARY_PATH read from the environment
+    at call time, so setting them here before opuslib is ever imported
+    fixes this without the user having to set anything manually."""
+    if platform.system() != "Darwin":
+        return
+
+    candidates = []
+    try:
+        result = subprocess.run(
+            ["brew", "--prefix", "opus"], capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            candidates.append(result.stdout.strip() + "/lib")
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    candidates += ["/opt/homebrew/lib", "/usr/local/lib"]
+
+    existing = os.environ.get("DYLD_LIBRARY_PATH", "")
+    search_path = ":".join(dict.fromkeys(candidates + ([existing] if existing else [])))
+    os.environ["DYLD_LIBRARY_PATH"] = search_path
+    os.environ["DYLD_FALLBACK_LIBRARY_PATH"] = search_path
+
+
+_ensure_libopus_discoverable()
 
 # Opus frame duration (ms) at 16kHz -> sample count, per RFC 6716 Section 3.1.
 _DURATION_TO_SAMPLES = {2.5: 40, 5: 80, 10: 160, 20: 320, 40: 640, 60: 960}
@@ -92,10 +126,17 @@ def decode_opus_bytes(opus_data: bytes) -> tuple[bytes, DecodeStats]:
     """Decode raw concatenated Opus frames to 16-bit PCM. Returns (pcm, stats)."""
     try:
         import opuslib
-    except ImportError as exc:
-        raise ImportError(
-            "opuslib is required for audio decoding. Install it with `pip install opuslib` "
-            "(requires the libopus system library - see README.md)."
+    except Exception as exc:
+        # opuslib raises a plain Exception (not ImportError) when its ctypes
+        # lookup can't find the libopus shared library at all, which looks
+        # identical to it simply not being installed - catch broadly so the
+        # real fix (brew install opus, or an Apple Silicon PATH issue
+        # _ensure_libopus_discoverable() above should already handle) is
+        # obvious either way.
+        raise RuntimeError(
+            "Could not load the Opus audio library (opuslib raised: "
+            f"{exc}). Make sure it's installed with `brew install opus`, "
+            "then try again - see README.md."
         ) from exc
 
     decoder = opuslib.Decoder(SAMPLE_RATE, CHANNELS)
