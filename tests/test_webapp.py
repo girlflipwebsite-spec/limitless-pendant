@@ -192,6 +192,29 @@ def test_export_requires_start_date():
     assert client.post("/export/audio", data={}).status_code == 400
 
 
+def test_page_javascript_is_syntactically_valid(tmp_path):
+    """The page's script lives inside a Python string, where an unescaped
+    backslash-n becomes a real newline inside a JS string literal - a syntax
+    error that silently kills every button. Parse the served script for real."""
+    import re
+    import shutil
+    import subprocess
+
+    page = webapp.app.test_client().get("/").get_data(as_text=True)
+    script = re.search(r"<script>(.*?)</script>", page, re.S).group(1)
+
+    node = shutil.which("node")
+    if node is None:
+        # No node available: at least catch the specific mistake.
+        for line in script.splitlines():
+            assert line.count("'") % 2 == 0, f"unterminated JS string: {line!r}"
+        return
+    js = tmp_path / "page.js"
+    js.write_text(script, encoding="utf-8")
+    result = subprocess.run([node, "--check", str(js)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+
+
 def test_page_handles_lost_connection():
     page = webapp.app.test_client().get("/").get_data(as_text=True)
     assert "Lost connection to the local server" in page

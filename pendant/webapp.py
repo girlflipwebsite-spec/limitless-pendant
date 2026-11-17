@@ -122,7 +122,7 @@ function getJson(url, options) {
 
 function showLog(logEl, lines) {
   if (!logEl) return;
-  logEl.textContent = (lines || []).join('\n');
+  logEl.textContent = (lines || []).join('\\n');
   logEl.style.display = lines && lines.length ? 'block' : 'none';
   logEl.scrollTop = logEl.scrollHeight;
 }
@@ -140,7 +140,7 @@ function poll(jobId, statusEl, logEl, onDone, onFail, note) {
     showLog(logEl, data.log);
     if (data.status === 'running') {
       statusEl.className = 'status';
-      statusEl.textContent = (note ? note + '\n' : '') + 'Working... ' + lastProgress(data.log);
+      statusEl.textContent = (note ? note + '\\n' : '') + 'Working... ' + lastProgress(data.log);
       setTimeout(() => poll(jobId, statusEl, logEl, onDone, onFail, note), 1000);
     } else if (data.status === 'done') {
       onDone(statusEl, data.result, jobId);
@@ -174,7 +174,7 @@ function runSync() {
       enable();
       el.className = 'status ok';
       el.textContent = 'Done. Pages: ' + result.pages_received + ' (' + result.pages_new + ' new). Recordings saved: ' + result.recordings_saved +
-        (result.any_encrypted ? '\n[!] Some recordings are encrypted - see the developer before doing anything else.' : '');
+        (result.any_encrypted ? '\\n[!] Some recordings are encrypted - see the developer before doing anything else.' : '');
     }, enable);
   }).catch(() => { enable(); statusEl.className = 'status err'; statusEl.textContent = LOST; });
 }
