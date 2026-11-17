@@ -23,6 +23,7 @@ import sys
 import click
 
 from .ble_client import PendantClient, scan_for_pendants
+from .ble_errors import friendly_ble_error
 from .config import get_pendant_address, save_pendant_address
 from .logging_utils import SessionLog
 from .sync_state import SyncState
@@ -65,6 +66,21 @@ def scan(duration):
             for r in others:
                 rssi = f" (RSSI {r.rssi})" if r.rssi is not None else ""
                 log.echo(f"  {r.address}  {r.name or 'Unknown'}{rssi}")
+
+
+def _run_ble(coro):
+    """asyncio.run() for commands that talk to the Pendant, translating known
+    Bluetooth errors (e.g. stale pairing) into plain-English advice. Any
+    other error is re-raised untouched."""
+    try:
+        return asyncio.run(coro)
+    except click.ClickException:
+        raise
+    except Exception as exc:
+        help_text = friendly_ble_error(exc)
+        if help_text is None:
+            raise
+        raise click.ClickException(help_text) from exc
 
 
 async def _connected_client(log) -> PendantClient:
@@ -125,7 +141,7 @@ def status():
             finally:
                 await client.disconnect()
 
-        asyncio.run(run())
+        _run_ble(run())
 
 
 @cli.command()
@@ -153,7 +169,7 @@ def info():
             finally:
                 await client.disconnect()
 
-        asyncio.run(run())
+        _run_ble(run())
 
 
 @cli.command()
@@ -169,7 +185,7 @@ def explore():
             finally:
                 await client.disconnect()
 
-        asyncio.run(run())
+        _run_ble(run())
 
 
 @cli.command()
@@ -216,7 +232,7 @@ def sync():
             finally:
                 await client.disconnect()
 
-        asyncio.run(run())
+        _run_ble(run())
 
 
 @cli.command()
@@ -263,14 +279,19 @@ def transcribe(date, end_date, output_format):
     """Transcribe recordings into one clean transcript file.
 
     Give just a date for a single day, or add --to for a date range."""
+    def progress(message: str) -> None:
+        click.echo(message)
+
     if end_date:
         from .transcript_export import export_transcript_range
 
-        out_path = export_transcript_range(date, end_date, output_format=output_format)
+        out_path = export_transcript_range(
+            date, end_date, output_format=output_format, progress=progress
+        )
     else:
         from .transcript_export import export_daily_transcript
 
-        out_path = export_daily_transcript(date, output_format=output_format)
+        out_path = export_daily_transcript(date, output_format=output_format, progress=progress)
     click.echo(f"Wrote {out_path}")
 
 

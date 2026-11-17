@@ -3,9 +3,9 @@ from pendant.transcribe import TranscriptSegment
 
 
 def _fake_decode_opus_file(input_path, output_path):
-    # transcribe_day only checks that the .wav file exists afterward.
+    # Must be big enough not to be treated as an empty recording.
     with open(output_path, "wb") as f:
-        f.write(b"")
+        f.write(b"\x00" * 4096)
 
 
 def _fake_transcribe_wav(wav_path, model_size=None):

@@ -367,6 +367,38 @@ never gets uploaded to the code repository.
 
 ## 9. Troubleshooting
 
+- **`sync` fails with "Peer removed pairing information":** macOS and the
+  Pendant disagree about their saved Bluetooth connection - usually because
+  the Pendant was connected to your phone in the meantime. Nothing is wrong
+  with the Pendant or your recordings. The tool now prints this same advice
+  itself. To fix:
+  1. Turn off Bluetooth on your phone (or fully quit the Limitless app).
+  2. Restart the Mac's Bluetooth service (it restarts on its own; other
+     Bluetooth devices reconnect after a few seconds):
+     ```bash
+     sudo pkill bluetoothd
+     ```
+  3. Tap the Pendant to wake it, then run `python3 -m pendant.cli scan`.
+  4. Run `sync` again.
+- **Web page export seems stuck on "Working...":** exports now run as a
+  separate process and the page shows live progress ("Transcribing recording
+  3 of 12") plus a log box under the button. The first transcription ever
+  downloads the speech model (~150 MB), which can take a few minutes - the
+  log says so. If you see "Lost connection to the local server", the Terminal
+  window running `gui` was closed or stopped: reopen it and reload the page.
+  Clicking Export again while one is running just shows the running one's
+  progress. If an export fails, the same thing can be run directly for the
+  full error: `python3 -m pendant.cli transcribe 2026-11-16`.
+- **Transcripts are cached:** each recording's transcript is saved next to
+  its audio as `<name>.transcript.json`, so exporting the same day again is
+  fast. It is redone automatically if the model size or language changes.
+  Delete those files to force a full re-transcription. Near-empty recordings
+  (under ~1 KB of audio) are skipped.
+- **Transcribing a language other than English:** English is the default.
+  Set `PENDANT_LANGUAGE` to a language code (`es`, `fr`, `de`, ...) or to
+  `auto` to detect it per recording, e.g.
+  `PENDANT_LANGUAGE=auto python3 -m pendant.cli transcribe 2026-11-16`
+  (for the web page: `PENDANT_LANGUAGE=auto python3 -m pendant.cli gui`).
 - **`transcribe` fails with an error mentioning `metadata_errors`:** this
   means `pip` installed a too-new version of the `av` package that the
   transcription library isn't compatible with yet (already pinned in
